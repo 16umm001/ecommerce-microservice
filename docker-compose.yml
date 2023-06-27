@@ -1,0 +1,169 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:14.2
+    restart: always
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=accounts
+      - POSTGRES_PORT=5432
+
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "accounts"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+    networks:
+      - ecommerce
+
+  mongo_db:
+    image: mongo:6-jammy
+    container_name: mongo_db
+    restart: on-failure
+    ports:
+      - "27017:27017"
+    volumes:
+      - dbdata6:/data/db
+    networks:
+      - ecommerce
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet | grep 1
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+
+  serviceregistry:
+    build:
+      context: ./serviceregistry
+      dockerfile: Dockerfile
+    image: ecommerce/serviceregistry
+    container_name: serviceregistry
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: "curl --fail --silent localhost:8761/actuator/health | grep UP || exit 1"
+      interval: 2s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ecommerce
+
+  apigateway:
+    build:
+      context: ./apigateway
+      dockerfile: Dockerfile
+    image: ecommerce/apigateway
+    container_name: apigateway
+    ports:
+      - "8084:8084"
+    depends_on:
+      serviceregistry:
+        condition: service_healthy
+    links:
+      - serviceregistry
+    healthcheck:
+      test: "curl --fail --silent localhost:8084/actuator/health | grep UP || exit 1"
+      interval: 2s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ecommerce
+
+  id_generator:
+    build:
+      context: ./id.generator
+      dockerfile: Dockerfile
+    image: ecommerce/id_generator
+    container_name: id_generator
+    ports:
+      - "8082:8082"
+    depends_on:
+      serviceregistry:
+        condition: service_healthy
+      apigateway:
+        condition: service_healthy
+    links:
+      - serviceregistry
+    healthcheck:
+      test: "curl --fail --silent localhost:8082/actuator/health | grep UP || exit 1"
+      interval: 2s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ecommerce
+
+  accounts:
+    build:
+      context: ./accounts
+      dockerfile: Dockerfile
+    image: ecommerce/accounts
+    container_name: accounts
+    restart: on-failure
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/accounts
+      - REGISTRY_SERVICE_URL=http://serviceregistry:8761/eureka
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=accounts
+      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=postgres
+    env_file:
+      - .env
+    depends_on:
+      serviceregistry:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      apigateway:
+        condition: service_healthy
+      id_generator:
+        condition: service_healthy
+    links:
+      - serviceregistry
+    networks:
+      - ecommerce
+
+  products:
+    build:
+      context: ./products
+      dockerfile: Dockerfile
+    image: ecommerce/products
+    restart: on-failure
+    container_name: products
+    ports:
+      - "8083:8083"
+    depends_on:
+      serviceregistry:
+        condition: service_healthy
+      apigateway:
+        condition: service_healthy
+      mongo_db:
+        condition: service_healthy
+    links:
+      - mongo_db
+    networks:
+      - ecommerce
+    environment:
+      - REGISTRY_SERVICE_URL=http://serviceregistry:8761/eureka
+      - PRODUCT_DATABASE_URL=mongodb://mongo_db:27017/products
+
+volumes:
+  db:
+    driver: local
+  dbdata6:
+
+networks:
+  ecommerce:
+    name: ecommerce

@@ -1,0 +1,15 @@
+server:
+  port : 8082
+
+spring:
+  application:
+    name: ID-GENERATOR-SERVICE
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://serviceregistry:8761/eureka

@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: PRODUCT-SERVICE
+  data:
+    mongodb:
+      uri: ${PRODUCT_DATABASE_URL}
+
+server:
+  port: 8083
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: ${REGISTRY_SERVICE_URL}

@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: ACCOUNT-SERVICE
+  jpa:
+    database: postgresql
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    url: ${DATABASE_URL}
+    username: postgres
+    password: postgres
+    driverClassName: org.postgresql.Driver
+
+server:
+  port : 8081
+
+jwt:
+  secret: "9IDbL8wV6iim4a2og0Qma+93FhmK10GsBFwOmsnYLkU="
+  jwtExpirationMs: 8640000
+
+unique_id:
+  uri: "lb://ID-GENERATOR-SERVICE/api/id"
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: ${REGISTRY_SERVICE_URL}
