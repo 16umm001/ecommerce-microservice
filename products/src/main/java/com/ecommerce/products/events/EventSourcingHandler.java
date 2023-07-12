@@ -2,6 +2,7 @@ package com.ecommerce.products.events;
 
 import com.ecommerce.products.aggregates.AggregateRoot;
 import com.ecommerce.products.aggregates.ProductAggregate;
+import com.ecommerce.products.utils.EventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,9 @@ import java.util.Comparator;
 public class EventSourcingHandler {
     @Autowired
     private EventStore eventStore;
+
+    @Autowired
+    private EventProducer eventProducer;
 
     public void save(AggregateRoot aggregateRoot) {
         eventStore.saveEvent(aggregateRoot.getId(),
@@ -40,7 +44,9 @@ public class EventSourcingHandler {
                 continue;
             }
             var events = eventStore.getEvents(aggregateId);
-            // handle producing events
+            for(var event: events){
+                eventProducer.produce(event.getClass().getSimpleName(), event);
+            }
         }
 
     }

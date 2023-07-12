@@ -5,6 +5,7 @@ import com.ecommerce.products.exceptions.AggregateNotFoundException;
 import com.ecommerce.products.exceptions.ConcurrencyException;
 import com.ecommerce.products.models.EventModel;
 import com.ecommerce.products.repositories.EventStoreRepository;
+import com.ecommerce.products.utils.EventProducer;
 import com.ecommerce.products.utils.GenerateUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ public class ProductEventStore implements EventStore{
 
     @Autowired
     private GenerateUID generateUID;
+
+    @Autowired
+    private EventProducer eventProducer;
 
     @Override
     public void saveEvent(long aggregateId, Iterable<BaseEvent> events, int expectedVersion) {
@@ -43,8 +47,9 @@ public class ProductEventStore implements EventStore{
                     .baseEvent(event)
                     .build();
             var persistedEvent = eventStoreRepository.save(eventModel);
-            System.out.println("persistent event: " + persistedEvent);
-            // implement kafka producer event
+            if(persistedEvent.getId() > 0){
+                eventProducer.produce(event.getClass().getSimpleName(), event);
+            }
         }
     }
 
