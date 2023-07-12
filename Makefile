@@ -4,6 +4,10 @@ ACCOUNTS := accounts products
 
 all: build build_apis run
 
+export DATABASE_URL=jdbc:postgresql://localhost:5432/accounts
+export REGISTRY_SERVICE_URL=http://localhost:8761/eureka
+export PRODUCT_DATABASE_URL=mongodb://localhost:27017/products
+
 build:
 	@for project in $(PROJECTS); do \
   		cd $$project && mvn clean package; \

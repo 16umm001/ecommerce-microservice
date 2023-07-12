@@ -43,6 +43,7 @@
       <module name="products" target="17" />
       <module name="ServiceRegistry" target="17" />
       <module name="serviceregistry" target="17" />
+      <module name="suggestions" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -53,6 +54,7 @@
       <module name="id.generator" options="-parameters" />
       <module name="products" options="-parameters" />
       <module name="serviceregistry" options="-parameters" />
+      <module name="suggestions" options="-parameters" />
     </option>
   </component>
 </project>
